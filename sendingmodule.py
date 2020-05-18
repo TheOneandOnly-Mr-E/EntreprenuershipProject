@@ -1,13 +1,10 @@
 import smtplib
 import os
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.nonmultipart import MIMENonMultipart
 
 email = "coronavirusmessagingteam@gmail.com"
 pas = "zhtgbxwqnlkqaosg"
 
-recipient_list = ['9259995526@vtext.com']#,'9258588411@text.att.net']#'9259678333@vtext.com']
+recipient_list = '9259995526@vtext.com'
 # Defines the smtp server and port to use to send messages
 smtp = "smtp.gmail.com"
 port = 587
