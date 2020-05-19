@@ -10,11 +10,11 @@ pas = "zhtgbxwqnlkqaosg"
 smtp = "smtp.gmail.com"
 port = 587
 server = smtplib.SMTP(smtp,port)
-
+timesRan = 0
 # Defines the email and app-specific password to use}
 EMAIL = "coronavirusmessagingteam@gmail.com"
 PAS = "zhtgbxwqnlkqaosg"
-# Defins the IMAP server to use
+# Defines the IMAP server to use
 SERVER = "imap.gmail.com"
 
 '''# Connects to the server and selects inbox
@@ -36,25 +36,23 @@ def cleanInbox():
 def replySend():
     try:
         command, recipient = messageCheck()
-        '''email = "coronavirusmessagingteam@gmail.com"
-        pas = "zhtgbxwqnlkqaosg"
-        smtp = "smtp.gmail.com"
-        port = 587
-        server = smtplib.SMTP(smtp,port)'''
-        server.starttls()
-        #server.login(senderemail,pas)
-        server.connect(smtp, port)
+        if timesRan < 1:
+            server.starttls()
+        server.login(senderemail,pas)
         if command == '!help':
             message = "!help - Displays a list of commands\n!unsubscribe - Unsubscribes you from the CMT\n!recent - Displays the most recent CMT message"
+            server.sendmail(senderemail,recipient,message)
         elif command == '!subscribe':
             recipient_list = os.open("recipientlist.txt" , "a")
             recipient_list.write(",'"+recipient+"'")
             recipient_list.close()
             message = "Congratulations! You have subscribed to the Coronavirus Messaging Team's updates! Please send the message (!help) without parentheses to see all available commands."
+            server.sendmail(senderemail,recipient,message)
         else:
             message = 'Please input a proper command. If you need a list of commands, send the message "!help" without quotation marks.'
+            server.sendmail(senderemail,recipient,message)
         cleanInbox()
-        server.sendmail(senderemail,recipient,message)
+        server.logout()
         server.quit()
     except TypeError:
         pass
@@ -86,9 +84,11 @@ def messageCheck():
                     if p.get_content_type() == 'text/plain':
                         message_content += p.get_payload()
                         return message_content, sender
-                        inbox.close()
-                        inbox.logout()
+    inbox.close()
+    inbox.logout()
 
 while running == True:
     time.sleep(1)
     replySend()
+    print(timesRan)
+    timesRan += 1
