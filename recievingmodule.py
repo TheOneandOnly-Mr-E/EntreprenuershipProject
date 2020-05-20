@@ -1,26 +1,36 @@
 import email
+import imaplib
+import keyboard
 import os
 import smtplib
-import imaplib
+import sys
 import time
+import pygame
+import pygame.locals
+
 running = True
+recipient_list = []
+timesRan = 0
 
 senderemail = "coronavirusmessagingteam@gmail.com"
 pas = "zhtgbxwqnlkqaosg"
 smtp = "smtp.gmail.com"
 port = 587
-server = smtplib.SMTP(smtp,port)
-timesRan = 0
+server = smtplib.SMTP()
+
+pygame.init()
+BLACK = (0,0,0)
+WIDTH = 1280
+HEIGHT = 1024
+windowSurface = pygame.display.set_mode((WIDTH, HEIGHT), 0, 32)
+
+windowSurface.fill(BLACK)
+
 # Defines the email and app-specific password to use}
 EMAIL = "coronavirusmessagingteam@gmail.com"
 PAS = "zhtgbxwqnlkqaosg"
 # Defines the IMAP server to use
 SERVER = "imap.gmail.com"
-
-'''# Connects to the server and selects inbox
-inbox = imaplib.IMAP4_SSL(SERVER)
-inbox.login(EMAIL,PAS)
-inbox.select('inbox')'''
 
 def cleanInbox():
     inbox = imaplib.IMAP4_SSL(SERVER)
@@ -33,27 +43,90 @@ def cleanInbox():
     inbox.close()
     inbox.logout()
 
+def sendQuit(msg, rcpt):
+    server.connect(smtp,port)
+    server.starttls()
+    server.login(senderemail, pas)
+    server.sendmail(senderemail, rcpt, msg)
+    cleanInbox()
+    server.rset()
+    server.quit()
+
+def subscriberCheck(rcpt):
+    rclist = []
+    rcstring = ""
+    rcptexists = False
+    recipientList = open("recipientlist.txt", "r")
+    recipients = recipientList.read()
+    for r in recipients:
+        if r == " ":
+            rclist.append(rcstring)
+            rcstring = ""
+        elif r != " ":
+            rcstring += r
+    for r in rclist:
+        if r == rcpt:
+            rcptexists = True
+    for r in recipient_list:
+        if r == rcpt:
+            rcptexists = True
+    recipientList.close()
+    return rcptexists
+
+def unsubRcpt(rcpt):
+    index = -1
+    rclist = []
+    rcstring = ""
+    recipientList = open("recipientlist.txt", "r")
+    recipients = recipientList.read()
+    for r in recipients:
+        if r == " ":
+            rclist.append(rcstring)
+            rcstring = ""
+        elif r != " ":
+            rcstring += r
+    recipientList.close()
+    for r in rclist:
+        index += 1
+        if r == rcpt:
+            rclist.pop(index)
+            recipientList = open("recipientlist.txt", "w")
+            for r in rclist:
+                recipientList.write(r)
+                recipientList.close()
+    return rclist
+
 def replySend():
     try:
         command, recipient = messageCheck()
-        if timesRan < 1:
-            server.starttls()
-        server.login(senderemail,pas)
         if command == '!help':
-            message = "!help - Displays a list of commands\n!unsubscribe - Unsubscribes you from the CMT\n!recent - Displays the most recent CMT message"
-            server.sendmail(senderemail,recipient,message)
+            message = "!help - Displays a list of commands\n!unsubscribe - Unsubscribes you from the CMT service"
+            sendQuit(message, recipient)
         elif command == '!subscribe':
-            recipient_list = os.open("recipientlist.txt" , "a")
-            recipient_list.write(",'"+recipient+"'")
-            recipient_list.close()
-            message = "Congratulations! You have subscribed to the Coronavirus Messaging Team's updates! Please send the message (!help) without parentheses to see all available commands."
-            server.sendmail(senderemail,recipient,message)
+            rcptexists = subscriberCheck(recipient)
+            if rcptexists == True:
+                message = "It appears you are already subscribed to the Coronavirus Messaging Team's updates!"
+            elif rcptexists == False:
+                recipient_list.append(recipient)
+                recipientList = open("recipientlist.txt", "a")
+                for r in recipient_list:
+                    rstring = r + " "
+                    recipientList.write(rstring)
+                recipientList.close()
+                message = "Congratulations! You have subscribed to the Coronavirus Messaging Team's updates! Please send the message (!help) without parentheses to see all available commands."
+            sendQuit(message, recipient)
+        elif command == '!unsubscribe':
+            rcptexists = subscriberCheck(recipient)
+            if rcptexists == False:
+                message = "It appears you aren't subscribed to the Coronavirus Messaging Team's updates."
+            elif rcptexists == True:
+                recipient_list = unsubRcpt(recipient)
+                message = "You are officially unsubscribed from the Coronavirus Messaging Team's updates. If you have any feedback to give, please do so at this link: https://forms.gle/ua7VpQrwZzCjRCek9"
+
+
         else:
-            message = 'Please input a proper command. If you need a list of commands, send the message "!help" without quotation marks.'
-            server.sendmail(senderemail,recipient,message)
-        cleanInbox()
-        server.logout()
-        server.quit()
+            message = 'Please input a proper command. If you need a list of commands, send the message (!help) without parentheses.'
+            sendQuit(message, recipient)
     except TypeError:
         pass
 
@@ -88,7 +161,20 @@ def messageCheck():
     inbox.logout()
 
 while running == True:
+    print(timesRan)
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_q:
+                print("Program shutting down")
+                recipientList = open("recipientlist.txt", "a")
+                for r in recipient_list:
+                    rstring = r + " "
+                    recipientList.write(rstring)
+                recipientList.close()
+                pygame.quit()
+                sys.exit()
+
+
     time.sleep(1)
     replySend()
-    print(timesRan)
     timesRan += 1

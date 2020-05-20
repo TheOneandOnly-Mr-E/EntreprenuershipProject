@@ -4,7 +4,22 @@ import os
 email = "coronavirusmessagingteam@gmail.com"
 pas = "zhtgbxwqnlkqaosg"
 
-recipient_list = '9259995526@vtext.com'
+def getRcpts():
+    rclist = []
+    rcstring = ""
+    rcptexists = False
+    recipientList = open("recipientlist.txt", "r")
+    recipients = recipientList.read()
+    for r in recipients:
+        if r == " ":
+            rclist.append(rcstring)
+            rcstring = ""
+        elif r != " ":
+            rcstring += r
+    return rclist
+
+recipient_list = getRcpts()
+
 # Defines the smtp server and port to use to send messages
 smtp = "smtp.gmail.com"
 port = 587
@@ -14,7 +29,7 @@ server.starttls()
 # Logs into the server
 server.login(email,pas)
 
-sms = "(Coronavirus Messaging Team Update)\nThis is a test message."
+sms = "(Coronavirus Messaging Team Update)\n\n" + input("Input the message to send here: ")
 
 server.sendmail(email,recipient_list,sms)
 
